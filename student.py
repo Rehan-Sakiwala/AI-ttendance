@@ -460,6 +460,190 @@ class Student:
         self.v_rank.set("")
         self.v_radio1.set("")
 
+#Generating dataset and photo sample collection
+    def generate_dataset(self):
+        if (
+        self.v_dep.get() == "Select Department" or
+        self.v_course.get() == "Select Course" or
+        self.v_year.get() == "Select Year" or
+        self.v_semester.get() == "Select Sem" or
+        self.v_std_id.get() == "" or
+        self.v_std_name.get() == "" or
+        self.v_roll.get() == "" or
+        self.v_div.get() == "" or
+        self.v_gender.get() == "Select" or
+        self.v_dob.get() == ""
+        ):
+            messagebox.showerror("Error","All Fields are Required!!",parent=self.root)
+            return
+        try:
+            conn = mysql.connector.connect(host="localhost",username="root",password="sqll00",database="aittendance_db",port=3375)
+            my_cursor = conn.cursor()
+            
+            # Check if the student exists and get their database ID
+            my_cursor.execute("SELECT id FROM students WHERE std_prn = %s", (self.v_std_id.get(),))
+            student_record = my_cursor.fetchone()
+            
+            if student_record:
+                # Student exists, use the existing ID
+                id = student_record[0]
+            else:
+                # Student doesn't exist in database, get the next ID
+                my_cursor.execute("SELECT MAX(id) FROM students")
+                result = my_cursor.fetchone()
+                if result[0] is None:
+                    id = 1
+                else:
+                    id = result[0] + 1
+            
+            # Update student record and set photoSample to 'Yes'
+            my_cursor.execute("UPDATE students SET dep=%s, course=%s, year=%s, semester=%s, std_name=%s, `div`=%s, roll=%s, gender=%s, dob=%s, email=%s, phone=%s, address=%s, `rank`=%s, photoSample='Yes' WHERE std_prn=%s", 
+                    (self.v_dep.get(), 
+                    self.v_course.get(), 
+                    self.v_year.get(), 
+                    self.v_semester.get(), 
+                    self.v_std_name.get(), 
+                    self.v_div.get(), 
+                    self.v_roll.get(), 
+                    self.v_gender.get(), 
+                    self.v_dob.get(), 
+                    self.v_email.get(), 
+                    self.v_phone.get(), 
+                    self.v_address.get(), 
+                    self.v_rank.get(),
+                    self.v_std_id.get()
+                    ))
+            
+            conn.commit()
+            self.fetch_data()
+            conn.close()
+
+            if not os.path.exists("data"):
+                os.makedirs("data")
+
+            face_classifier = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+            
+            def face_cropped(img):
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                faces = face_classifier.detectMultiScale(gray, 1.3, 5)
+                
+                if len(faces) == 0:
+                    return None
+                    
+                for (x, y, w, h) in faces:
+                    face_cropped = img[y:y+h, x:x+w]
+                    return face_cropped
+            
+            cap = cv2.VideoCapture(0)
+            img_id = 0
+            
+            while True:
+                ret, my_frame = cap.read()
+                if not ret:
+                    messagebox.showerror("Camera Error", "Could not access the camera.", parent=self.root)
+                    break
+                    
+                cropped_face = face_cropped(my_frame)
+                if cropped_face is not None:
+                    img_id += 1
+                    face = cv2.resize(cropped_face, (450, 450))
+                    face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+                    file_name_path = f"data/user.{id}.{img_id}.jpg"
+                    cv2.imwrite(file_name_path, face)
+                    cv2.putText(face, str(img_id), (50, 50), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 255, 0), 2)
+                    cv2.imshow("Face Capture", face)
+
+                if cv2.waitKey(1) == 13 or int(img_id) == 100:  # 13 code Enter key
+                    break
+            
+            cap.release()
+            cv2.destroyAllWindows()
+            
+            self.v_radio1.set("Yes")
+            
+            messagebox.showinfo("Result", f"Dataset generation completed successfully! Captured {img_id} images.", parent=self.root)
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Cannot proceed further: {str(e)}", parent=self.root)
+            if (
+            self.v_dep.get() == "Select Department" or
+            self.v_course.get() == "Select Course" or
+            self.v_year.get() == "Select Year" or
+            self.v_semester.get() == "Select Sem" or
+            self.v_std_id.get() == "" or
+            self.v_std_name.get() == "" or
+            self.v_roll.get() == "" or
+            self.v_div.get() == "" or
+            self.v_gender.get() == "Select" or
+            self.v_dob.get() == ""
+            ):
+                messagebox.showerror("Error","All Fields are Required!!",parent=self.root)
+                return
+            try:
+                conn = mysql.connector.connect(host="localhost",username="root",password="sqll00",database="aittendance_db",port=3375)
+                my_cursor = conn.cursor()
+                my_cursor.execute("select * from students")
+                myResult = my_cursor.fetchall()
+                id=0
+                for x in myResult:
+                    id+=1
+                
+                my_cursor.execute("UPDATE students SET dep=%s, course=%s, year=%s, semester=%s, std_name=%s, `div`=%s, roll=%s, gender=%s, dob=%s, email=%s, phone=%s, address=%s, `rank`=%s, photoSample=%s WHERE std_prn=%s", 
+                        (self.v_dep.get(), 
+                        self.v_course.get(), 
+                        self.v_year.get(), 
+                        self.v_semester.get(), 
+                        self.v_std_name.get(), 
+                        self.v_div.get(), 
+                        self.v_roll.get(), 
+                        self.v_gender.get(), 
+                        self.v_dob.get(), 
+                        self.v_email.get(), 
+                        self.v_phone.get(), 
+                        self.v_address.get(), 
+                        self.v_rank.get(),
+                        self.v_radio1.get(),
+                        self.v_std_id.get()==id+1
+                        ))
+                conn.commit()
+                self.fetch_data()
+                self.reset_data()
+                conn.close()
+
+                face_classifier = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+                
+                def face_cropped(img):
+                    gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+                    faces=face_classifier.detectMultiScale(gray,1.3,5)  #1.3 - scaling factor, 5 - Minimum neighbour
+
+                    for(x,y,w,h) in faces:
+                        face_cropped=img[y:y+h,x:x+w]
+                        return face_cropped
+                
+                cap=cv2.VideoCapture(0)
+                img_id=0
+                while True:
+                    ret,my_frame=cap.read()
+                    if face_cropped(my_frame) is not None:
+                        img_id+=1
+                        face=cv2.resize(face_cropped(my_frame),(450,450))
+                        face=cv2.cvtColor(face,cv2.COLOR_BGR2GRAY)
+                        file_name_path = "data/user."+str(id)+"."+str(img_id)+".jpg"
+                        cv2.imwrite(file_name_path,face)
+                        cv2.putText(face,str(img_id),(50,50),cv2.FONT_HERSHEY_COMPLEX,2,(0,255,0),2)
+                        cv2.imshow("Face ",face)
+
+                    if cv2.waitKey(1)==13 or int(img_id) == 100:
+                        break
+                
+                cap.release()
+                cv2.destroyAllWindows()
+                messagebox.showinfo("Result","Generating dataset completed successfully!")
+
+
+            except Exception as e:
+                messagebox.showerror("Error",f"Cannot proceed further as {str(e)}")
+            
 
 if __name__=="__main__":
     root=Tk()
