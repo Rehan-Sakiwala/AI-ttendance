@@ -48,7 +48,42 @@ class Recognition:
         self.model_path = "face_encodings.pkl"
         if not os.path.exists(self.model_path):
             self.status_label.config(text="Status: Model not found. Please train first.")
+        
+    def mark_attendance(self, student_id, student_name, roll):
+        try:
+            conn = mysql.connector.connect(
+                host="localhost", 
+                username="root", 
+                password="sqll00", 
+                database="aittendance_db", 
+                port=3375
+            )
+            cursor = conn.cursor()
             
+            now = datetime.now()
+            current_date = now.strftime("%Y-%m-%d")
+            current_time = now.strftime("%H:%M:%S")
+            
+            cursor.execute(
+                "SELECT * FROM attendance WHERE student_id=%s AND attendance_date=%s", 
+                (student_id, current_date)
+            )
+            
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    "INSERT INTO attendance (student_id, student_name, roll, attendance_date, attendance_time) VALUES (%s, %s, %s, %s, %s)",
+                    (student_id, student_name, roll, current_date, current_time)
+                )
+                conn.commit()
+                self.result_label.config(text=f"Attendance marked for {student_name}")
+            else:
+                self.result_label.config(text=f"Attendance already marked for {student_name}")
+            
+            conn.close()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to mark attendance: {str(e)}", parent=self.root)
+
 if __name__ == "__main__":
     root = Tk()
     obj = Recognition(root)
