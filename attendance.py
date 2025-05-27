@@ -212,6 +212,82 @@ class Attendance:
         
         self.fetch_data()
 
+    def fetch_data(self):
+        try:
+            conn = mysql.connector.connect(
+                host="localhost", 
+                username="root", 
+                password="sqll00", 
+                database="aittendance_db", 
+                port=3375
+            )
+            my_cursor = conn.cursor()
+            
+            query = """
+            SELECT a.id, a.student_id, a.student_name, a.roll, s.dep, s.course, s.year, s.semester, 
+                   a.attendance_date, a.attendance_time 
+            FROM attendance a
+            LEFT JOIN students s ON a.student_id = s.id
+            WHERE 1=1
+            """
+            params = []
+            
+            # Apply date filter
+            if self.v_date.get() != "" and self.v_from_date.get() == self.v_to_date.get() == datetime.datetime.now().strftime("%Y-%m-%d"):
+                query += " AND a.attendance_date = %s"
+                params.append(self.v_date.get())
+            
+            # Apply date range filter
+            elif self.v_from_date.get() != "" and self.v_to_date.get() != "":
+                query += " AND a.attendance_date BETWEEN %s AND %s"
+                params.append(self.v_from_date.get())
+                params.append(self.v_to_date.get())
+            
+            # Apply student ID filter
+            if self.v_student_id.get() != "":
+                query += " AND s.std_prn = %s"
+                params.append(self.v_student_id.get())
+            
+            # Apply department filter
+            if self.v_department.get() != "All Departments" and self.v_department.get() != "":
+                query += " AND s.dep = %s"
+                params.append(self.v_department.get())
+            
+            # Apply course filter
+            if self.v_course.get() != "All Courses" and self.v_course.get() != "":
+                query += " AND s.course = %s"
+                params.append(self.v_course.get())
+            
+            # Apply year filter
+            if self.v_year.get() != "All Years" and self.v_year.get() != "":
+                query += " AND s.year = %s"
+                params.append(self.v_year.get())
+            
+            # Apply semester filter
+            if self.v_semester.get() != "All Semesters" and self.v_semester.get() != "":
+                query += " AND s.semester = %s"
+                params.append(self.v_semester.get())
+            
+            # Order by date and time
+            query += " ORDER BY a.attendance_date DESC, a.attendance_time DESC"
+            
+            my_cursor.execute(query, params)
+            data = my_cursor.fetchall()
+            
+            # Update the table
+            self.attendance_table.delete(*self.attendance_table.get_children())
+            
+            for row in data:
+                self.attendance_table.insert("", END, values=row)
+            
+            # Update status label
+            self.status_label.config(text=f"Total records: {len(data)}")
+            
+            conn.close()
+            
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Error fetching attendance data: {str(e)}", parent=self.root)
+
 if __name__ == "__main__":
     root = Tk()
     obj = Attendance(root)
