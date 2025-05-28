@@ -288,6 +288,18 @@ class Attendance:
         except Exception as e:
             messagebox.showerror("Database Error", f"Error fetching attendance data: {str(e)}", parent=self.root)
 
+    def reset_filters(self):
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        self.v_date.set(today)
+        self.v_from_date.set(today)
+        self.v_to_date.set(today)
+        self.v_student_id.set("")
+        self.v_department.set("All Departments")
+        self.v_course.set("All Courses")
+        self.v_year.set("All Years")
+        self.v_semester.set("All Semesters")
+        self.fetch_data()
+
 if __name__ == "__main__":
     root = Tk()
     obj = Attendance(root)
