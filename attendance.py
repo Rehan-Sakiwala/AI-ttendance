@@ -300,6 +300,45 @@ class Attendance:
         self.v_semester.set("All Semesters")
         self.fetch_data()
 
+    def export_to_excel(self):
+        try:
+            if len(self.attendance_table.get_children()) < 1:
+                messagebox.showinfo("No Data", "No data available to export", parent=self.root)
+                return
+            
+            file_path = filedialog.asksaveasfilename(
+                initialdir=os.getcwd(),
+                title="Save Excel File",
+                filetypes=(("Excel Files", "*.xlsx"), ("All Files", "*.*")),
+                defaultextension=".xlsx"
+            )
+            
+            if file_path == "":
+                return
+            
+            data = []
+            columns = ["ID", "Student PRN", "Name", "Roll No", "Department", "Course", 
+                      "Year", "Semester", "Date", "Time"]
+            
+            # Append column headers
+            data.append(columns)
+            
+            # Get all rows
+            for item in self.attendance_table.get_children():
+                row_data = []
+                for value in self.attendance_table.item(item, "values"):
+                    row_data.append(value)
+                data.append(row_data)
+            
+            # Create DataFrame and export to Excel
+            df = pd.DataFrame(data[1:], columns=data[0])
+            df.to_excel(file_path, index=False)
+            
+            messagebox.showinfo("Data Exported", f"Data exported to Excel successfully\n{file_path}", parent=self.root)
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Error exporting data: {str(e)}", parent=self.root)
+
 if __name__ == "__main__":
     root = Tk()
     obj = Attendance(root)
