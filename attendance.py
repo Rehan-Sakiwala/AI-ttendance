@@ -339,6 +339,42 @@ class Attendance:
         except Exception as e:
             messagebox.showerror("Export Error", f"Error exporting data: {str(e)}", parent=self.root)
 
+    def export_to_csv(self):
+        try:
+            if len(self.attendance_table.get_children()) < 1:
+                messagebox.showinfo("No Data", "No data available to export", parent=self.root)
+                return
+            
+            # Ask user for file name and location
+            file_path = filedialog.asksaveasfilename(
+                initialdir=os.getcwd(),
+                title="Save CSV File",
+                filetypes=(("CSV Files", "*.csv"), ("All Files", "*.*")),
+                defaultextension=".csv"
+            )
+            
+            if file_path == "":
+                return
+            
+            with open(file_path, "w", newline="") as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Write header
+                writer.writerow(["ID", "Student PRN", "Name", "Roll No", "Department", "Course", 
+                                "Year", "Semester", "Date", "Time"])
+                
+                # Write data rows
+                for item in self.attendance_table.get_children():
+                    row_data = []
+                    for value in self.attendance_table.item(item, "values"):
+                        row_data.append(value)
+                    writer.writerow(row_data)
+            
+            messagebox.showinfo("Data Exported", f"Data exported to CSV successfully\n{file_path}", parent=self.root)
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Error exporting data: {str(e)}", parent=self.root)
+    
 if __name__ == "__main__":
     root = Tk()
     obj = Attendance(root)
