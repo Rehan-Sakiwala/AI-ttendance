@@ -375,6 +375,95 @@ class Attendance:
         except Exception as e:
             messagebox.showerror("Export Error", f"Error exporting data: {str(e)}", parent=self.root)
     
+    def export_to_pdf(self):
+        try:
+            if len(self.attendance_table.get_children()) < 1:
+                messagebox.showinfo("No Data", "No data available to export", parent=self.root)
+                return
+            
+            # Ask user for file name and location
+            file_path = filedialog.asksaveasfilename(
+                initialdir=os.getcwd(),
+                title="Save PDF File",
+                filetypes=(("PDF Files", "*.pdf"), ("All Files", "*.*")),
+                defaultextension=".pdf"
+            )
+            
+            if file_path == "":
+                return
+            
+            pdf = FPDF()
+            pdf.add_page()
+            
+            pdf.set_font("Arial", "B", 15)
+            pdf.cell(200, 10, txt="AI-ttendance Attendance Report", ln=True, align="C")
+            
+            pdf.set_font("Arial", "I", 10)
+            report_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            pdf.cell(200, 10, txt=f"Generated on: {report_date}", ln=True, align="C")
+            
+            pdf.set_font("Arial", "", 10)
+            
+            if self.v_date.get() != "" and self.v_from_date.get() == self.v_to_date.get() == datetime.datetime.now().strftime("%Y-%m-%d"):
+                pdf.cell(200, 10, txt=f"Date: {self.v_date.get()}", ln=True)
+            elif self.v_from_date.get() != "" and self.v_to_date.get() != "":
+                pdf.cell(200, 10, txt=f"Date Range: {self.v_from_date.get()} to {self.v_to_date.get()}", ln=True)
+            
+            # Other filters
+            filters_text = []
+            if self.v_student_id.get() != "":
+                filters_text.append(f"Student PRN: {self.v_student_id.get()}")
+            if self.v_department.get() != "All Departments" and self.v_department.get() != "":
+                filters_text.append(f"Department: {self.v_department.get()}")
+            if self.v_course.get() != "All Courses" and self.v_course.get() != "":
+                filters_text.append(f"Course: {self.v_course.get()}")
+            if self.v_year.get() != "All Years" and self.v_year.get() != "":
+                filters_text.append(f"Year: {self.v_year.get()}")
+            if self.v_semester.get() != "All Semesters" and self.v_semester.get() != "":
+                filters_text.append(f"Semester: {self.v_semester.get()}")
+            
+            if filters_text:
+                pdf.cell(200, 10, txt="Filters: " + ", ".join(filters_text), ln=True)
+            
+            pdf.ln(10)
+            
+            # Table header
+            pdf.set_font("Arial", "B", 10)
+            # Calculate column width based on page width
+            col_width = pdf.w / 10
+            
+            # Configure table headers
+            headers = ["ID", "PRN", "Name", "Roll", "Dept", "Course", "Year", "Sem", "Date", "Time"]
+            for header in headers:
+                pdf.cell(col_width, 10, txt=header, border=1, align="C")
+            pdf.ln()
+            
+            # Table data
+            pdf.set_font("Arial", "", 8)
+            for item in self.attendance_table.get_children():
+                values = self.attendance_table.item(item, "values")
+                for value in values:
+                    # Truncate long values to fit column
+                    cell_text = str(value)
+                    if len(cell_text) > 12:
+                        cell_text = cell_text[:10] + "..."
+                    pdf.cell(col_width, 10, txt=cell_text, border=1, align="C")
+                pdf.ln()
+            
+            # Add total count
+            pdf.ln(10)
+            pdf.set_font("Arial", "B", 10)
+            record_count = len(self.attendance_table.get_children())
+            pdf.cell(200, 10, txt=f"Total records: {record_count}", ln=True)
+            
+            # Save the PDF
+            pdf.output(file_path)
+            
+            messagebox.showinfo("Data Exported", f"Data exported to PDF successfully\n{file_path}", parent=self.root)
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Error exporting data: {str(e)}", parent=self.root)
+    
 if __name__ == "__main__":
     root = Tk()
     obj = Attendance(root)
